@@ -1,11 +1,152 @@
+
 /*
- * Copyright (c) 2024 Your Name
+ * Copyright (c) 2024 Darryl L. Miles
+ * Copyright (c) 2022 Eric Smith
  * SPDX-License-Identifier: Apache-2.0
  */
 
-`default_nettype none
+`default_nettype wire
 
-module tt_um_example (
+// see src/config.json
+//`define TECH_SKY130 1
+//`define TECH_IHP130 1
+//`define TECH_GF180MCU_7T 1
+
+// This is to manage lint checking to not report about unconnected power pins.
+`ifdef USE_POWER_PINS
+`define LINT_OFF_PINMISSING_POWER_PINS /* verilator lint_off PINMISSING */
+`define LINT_ON_PINMISSING_POWER_PINS /* verilator lint_on PINMISSING */
+`else
+`define LINT_OFF_PINMISSING_POWER_PINS /* */
+`define LINT_ON_PINMISSING_POWER_PINS /* */
+`endif
+
+module invgate(input A, output Y);
+`ifdef COCOTB_SIM
+    assign #1 Y = ~A;
+`elsif TECH_SKY130
+    (* keep, syn_keep *) sky130_fd_sc_hd__inv_2 inv_notouch_(.A(A),.Y(Y));
+`elsif TECH_IHP130
+    (* keep, syn_keep *) sg13g2_inv_2 inv_notouch_(.A(A),.Y(Y));
+`elsif TECH_GF180MCU_7T
+    `LINT_OFF_PINMISSING_POWER_PINS
+    (* keep, syn_keep *) gf180mcu_fd_sc_mcu7t5v0__inv_2 inv_notouch_(.ZN(Y),.I(A));
+    `LINT_ON_PINMISSING_POWER_PINS
+`else
+    $error("TECH_unknown");
+`endif
+endmodule
+
+module delaygate #(parameter N=3) (input A, output Z);
+    // N must be an odd number greater than 1
+`ifdef COCOTB_SIM
+    initial assert((N % 2) == 1);
+    initial $info("N=%d", N);
+`endif
+    wire [N-1:0] X;
+    wire [N:0] Y;
+    invgate inv[N:0](.A({X[N-1:0],A}),.Y(Y[N:0]));
+    assign X[N-1:0]=Y[N-1:0];
+    assign Z=Y[N];
+endmodule
+
+module andgate(input A,B, output Y);
+`ifdef COCOTB_SIM
+  assign #1 Y = A&B;
+`elsif TECH_SKY130
+  (* keep, syn_keep *) sky130_fd_sc_hd__and2_2 and2_notouch_(.A(A),.B(B),.X(Y));
+`elsif TECH_IHP130
+  (* keep, syn_keep *) sg13g2_and2_2 and2_notouch_(.A(A),.B(B),.X(Y));
+`elsif TECH_GF180MCU_7T
+  `LINT_OFF_PINMISSING_POWER_PINS
+  (* keep, syn_keep *) gf180mcu_fd_sc_mcu7t5v0__and2_2 and2_notouch_(.Z(Y),.A1(A),.A2(B));
+  `LINT_ON_PINMISSING_POWER_PINS
+`else
+  $error("TECH_unknown");
+`endif
+endmodule
+
+module orgate(input A,B, output Y);
+`ifdef COCOTB_SIM
+  assign #1 Y = A|B;
+`elsif TECH_SKY130
+  (* keep, syn_keep *) sky130_fd_sc_hd__or2_2 or2_notouch_(.A(A),.B(B),.X(Y));
+`elsif TECH_IHP130
+  (* keep, syn_keep *) sg13g2_or2_2 or2_notouch_(.A(A),.B(B),.X(Y));
+`elsif TECH_GF180MCU_7T
+  `LINT_OFF_PINMISSING_POWER_PINS
+  (* keep, syn_keep *) gf180mcu_fd_sc_mcu7t5v0__or2_2 or2_notouch_(.Z(Y),.A1(A),.A2(B));
+  `LINT_ON_PINMISSING_POWER_PINS
+`else
+  $error("TECH_unknown");
+`endif
+endmodule
+
+module posedge_detector #(parameter N=3) (input A, output Z);
+    wire Ad;
+    delaygate #(.N(N)) dg(.A(A),.Z(Ad));
+    andgate ag(.A(A),.B(~Ad),.Y(Z));
+endmodule
+
+module clkgen_2x #(parameter N=3) (input clk, output clk2x);
+    wire ne, pe;
+    posedge_detector #(.N(N)) pdp(.A(clk),.Z(pe));
+    posedge_detector #(.N(N)) pdn(.A(~clk),.Z(ne));
+    orgate og(.A(pe),.B(ne),.Y(clk2x));
+endmodule
+
+module dff(input d,rst_n,clk, output q);
+`ifdef COCOTB_SIM
+    reg qq;
+    always @(posedge clk or negedge rst_n)
+        if(!rst_n)
+            qq<=0;
+        else
+            qq<=d;
+    assign q = qq;
+`elsif TECH_SKY130
+    (* keep, syn_keep *) sky130_fd_sc_hd__dfrtp_4 dfrtp(
+        .D(d),
+        .RESET_B(rst_n),
+        .CLK(clk),
+        .Q(q)
+    );
+`elsif TECH_IHP130
+    // sg13g2_dfrbp_2 is -dont_use at this time ~Nov2024
+    (* keep, syn_keep *) sg13g2_dfrbp_1 dfrbp(
+        .D(d),
+        .RESET_B(rst_n),
+        .CLK(clk),
+        .Q(q),
+        .Q_N(/*n/c*/)
+    );
+`elsif TECH_GF180MCU_7T
+    `LINT_OFF_PINMISSING_POWER_PINS
+    (* keep, syn_keep *) gf180mcu_fd_sc_mcu7t5v0__dffrnq_1 dffrnq(
+        .D(d),
+        .RN(rst_n),
+        .CLK(clk),
+        .Q(q)
+    );
+    `LINT_ON_PINMISSING_POWER_PINS
+`else
+    $error("TECH_unknown");
+`endif
+endmodule
+
+module ddr_input #(parameter N=4) (input rst_n, clk, d, output q);
+
+  wire clk2x;
+  clkgen_2x #(.N(N)) clkgen_2x(.clk(clk),.clk2x(clk2x));
+  dff dff(
+     .rst_n(rst_n),
+     .d(d),
+     .clk(clk2x),
+     .q(q));
+
+endmodule
+
+module tt_um_dlmiles_ddr_throughput_test(
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
     input  wire [7:0] uio_in,   // IOs: Input path
@@ -16,12 +157,18 @@ module tt_um_example (
     input  wire       rst_n     // reset_n - low to reset
 );
 
-  // All output pins must be assigned. If not used, assign to 0.
-  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
+  assign uo_out[7:5] = {clk,2'b11};
   assign uio_out = 0;
   assign uio_oe  = 0;
 
+  dff d0(.d(ui_in[4]),.rst_n(rst_n),.clk(clk),.q(uo_out[4]));
+
+  ddr_input #(.N(1)) ddr_input1( .rst_n(rst_n), .d(ui_in[0]), .clk(clk), .q(uo_out[0]) );
+  ddr_input #(.N(3)) ddr_input3( .rst_n(rst_n), .d(ui_in[1]), .clk(clk), .q(uo_out[1]) );
+  ddr_input #(.N(5)) ddr_input5( .rst_n(rst_n), .d(ui_in[2]), .clk(clk), .q(uo_out[2]) );
+  ddr_input #(.N(7)) ddr_input7( .rst_n(rst_n), .d(ui_in[3]), .clk(clk), .q(uo_out[3]) );
+
   // List all unused inputs to prevent warnings
-  wire _unused = &{ena, clk, rst_n, 1'b0};
+  wire _unused = &{ena, uio_in[7:0], ui_in[7:5], 1'b0};
 
 endmodule
