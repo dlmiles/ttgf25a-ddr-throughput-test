@@ -1,5 +1,13 @@
 ![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg) ![](../../workflows/fpga/badge.svg)
 
+# Information
+
+This project is based on (https://github.com/ericsmi/tt08-ddr-throughput-test)
+
+See also (https://github.com/dlmiles/ttihp0p2-ddr-throughput-test)
+
+![Circuit Diagram](docs/diagram_tikz.png)
+
 # Tiny Tapeout Verilog Project Template
 
 - [Read the documentation for project](docs/info.md)

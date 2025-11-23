@@ -1,0 +1,395 @@
+\documentclass[12pt,oneside,tikz]{standalone}
+\usepackage{pgf,tikz,comment,amsmath}
+\usepackage{circuitikz}
+\usepackage[active,tightpage]{preview}
+\PreviewEnvironment{tikzpicture}
+\usetikzlibrary{positioning,calc,arrows,circuits.logic.US}
+\usepackage[a4paper,landscape,margin=0.5cm,left=3.75cm]{geometry}
+\ctikzset{logic ports=ieee}
+\pagestyle{empty}
+
+\begin{document}
+
+\title{Figure}
+\author{}
+\maketitle
+\section{Figure}
+
+\begin{tikzpicture}[>=latex, circuit logic US, every node/.style={font=\small\sffamily}, node distance=2.5cm]
+
+\tikzset{flipflop DQ/.style={flipflop, scale=.7,
+         flipflop def={t1=D, t6=Q, c3=1, clock wedge size=.3, font=\normalsize},
+}}
+\tikzset{flipflop DQC/.style={flipflop, scale=.7,
+         flipflop def={t1=D, t6=Q, c3=1, nd=1, clock wedge size=.3, font=\normalsize},
+}}
+\tikzset{flipflop DQClc/.style={flipflop, scale=.7,
+         flipflop def={t1=d, t6=q, c3=1, nd=1, clock wedge size=.3, font=\normalsize},
+}}
+
+% reused flipflop model for ports
+\tikzset{counter/.style={
+         %draw,rectangle,minimum height=25mm,minimum width=15mm}
+         flipflop, scale=1,
+         flipflop def={t1=EN, t2=SEL, t6=O, nd=1, clock wedge size=2, font=\normalsize},
+}}
+
+\tikzset{linebusticko/.style={
+         draw,rectangle,very thin,minimum height=0.5mm,minimum width=0.5mm}
+}
+
+\tikzstyle{fonta} = [draw,rectangle,text centered]
+\tikzstyle{fontb} = [draw,rectangle,text centered,font=\bf\it]
+
+\newcommand\currentcoordinate{\the\tikz@lastxsaved,\the\tikz@lastysaved}
+\newcommand\currentx{\the\tikz@lastxsaved}
+\newcommand\currenty{\the\tikz@lastysaved}
+\makeatother
+\newcommand\fontb{\bf}
+%\newcommand\linebustickzzz{\draw let \p1 = (\currentcoordinate) in [thick] (\p1) -- ++(0.1em,0.1em)}
+\newcommand\linebustick{\textbf{/}} % cheat with font
+
+\coordinate (origin) at (0,0);
+\coordinate (portin) at (0,0); % used for absolute X value
+\coordinate (portout) at (20,0); % used for absolute X value
+
+\coordinate (section1) at (0,14); % used for top section origin
+\coordinate (section2) at (0,2); % used for bottom section origin
+
+%\begin{circuitikz} %[nodes=draw]
+
+  %% section1 (top part)
+
+  \node[flipflop DQC] (Rff) at ([shift={(18.75,4.6)}] section1) {}; % 18.25,16.6
+  \node at (Rff) {\tiny DFF};
+  \node[or gate] (or2) at ([shift={(17.15,4)}] section1) {}; % 16.5,16.0
+
+  \draw[thick] (or2.output) -- (Rff.pin 3);
+  \draw[thick] (Rff.pin 1) -| +(-0.33,0) |- ([shift={(0,6)}] section1); % 0,18
+  \node[circ] (circ_d) at ([shift={(0,6)}] section1) {};
+  \node[anchor=east, align=right, text width=2cm] (text_d) at ([xshift=-0.1em] circ_d) {\fontb{d}};
+  \draw[thick] (Rff.pin 6) -- ++(1.66,0) node[circ] (circ_q_0) {};
+  \node[anchor=west, align=left, text width=2cm] (text_q_0) at ([xshift=0.1em] circ_q_0) {\fontb{q}};
+
+  \node[circ] (circ_rst_n_0) at ([yshift=0.5] section1) {};
+  \draw[thick,brown] (circ_rst_n_0) -| (Rff-Nd.south); % -Nd offsets bubble
+  \node[anchor=east, align=right, text width=2cm] (text_rst_n_0) at ([xshift=-0.1em] circ_rst_n_0) {\fontb{rst\_n}};
+
+  % pe
+  \node[not gate] (inv_pe_1) at ([shift={(2.25,4.5)}] section1) {}; % 3.0,16.5
+  \node[not gate] (inv_pe_2) at ([shift={(4.0,4.5)}] section1) {}; % 5.0,16.5
+  \node[not gate] (inv_pe_3) at ([shift={(5.25,4.5)}] section1) {}; % 6.25,16.5
+  \node[not gate] (inv_pe_4) at ([shift={(7.5,4.5)}] section1) {}; % 8.5,16.5
+  \node[not gate] (inv_pe_5) at ([shift={(8.75,4.5)}] section1) {}; % 9.75,16.5
+  \node[not gate] (inv_pe_6) at ([shift={(10.75,4.5)}] section1) {};
+  \node[not gate] (inv_pe_7) at ([shift={(11.85,4.5)}] section1) {};
+  \node[anchor=center, align=center, text width=12cm] at ([shift={(7,4)}] section1) {\tiny DelayGate Various Odd Count based on N=1\textbar3\textbar5\textbar7};
+  \node[anchor=center, align=center, text width=2cm] at ([shift={(15.3,4.3)}] section1) {\tiny posedge detector};
+
+  \node[not gate] (inv_pe_end) at ([shift={(13.5,4.5)}] section1) {}; % 12.0,16.5
+
+  \node[and gate] (pe_and2) at ([shift={(15.5,5.4)}] section1) {}; % 14.25,17.4
+
+  \draw[thick,dashed] (inv_pe_1.output) -- (inv_pe_2.input);
+  \draw[thick] (inv_pe_2.output) -- (inv_pe_3.input);
+  \draw[thick,dashed] (inv_pe_3.output) -- (inv_pe_4.input);
+  \draw[thick] (inv_pe_4.output) -- (inv_pe_5.input);
+  \draw[thick,dashed] (inv_pe_5.output) -- (inv_pe_6.input);
+  \draw[thick] (inv_pe_6.output) -- (inv_pe_7.input);
+  \draw[thick,dashed] (inv_pe_7.output) -- (inv_pe_end.input);
+  \draw[dashed] ([shift={(1.8,5.15)}] section1) rectangle ([shift={(12.75,3.75)}] section1) {}; % 2.5,17.15 % 10.5,15.75
+  \node[circ] (circ_pe_clk) at ([shift={(0.33,5.5)}] section1) {}; % 0.75,17.5
+  \draw[thick] (circ_pe_clk) -- (pe_and2.input 1);
+  \draw[thick] (circ_pe_clk) -| ++(0,0) |- (inv_pe_1.input);
+  \draw[thick] (inv_pe_end.output) -| ++(0.33,0) |- (pe_and2.input 2);
+  \draw[thick] (pe_and2.output) -| ++(0.33,0) |- (or2.input 1);
+
+   % ne
+  \node[not gate] (inv_ne_clk) at ([shift={(1.0,1.5)}] section1) {}; % on 'ne' 1.5,13.5
+  \node[not gate] (inv_ne_1) at ([shift={(2.25,1.5)}] section1) {}; % 3.0,13.5
+  \node[not gate] (inv_ne_2) at ([shift={(4.0,1.5)}] section1) {}; % 5.0,13.5
+  \node[not gate] (inv_ne_3) at ([shift={(5.25,1.5)}] section1) {}; % 6.25,13.5
+  \node[not gate] (inv_ne_4) at ([shift={(7.5,1.5)}] section1) {}; % 8.5,13.5
+  \node[not gate] (inv_ne_5) at ([shift={(8.75,1.5)}] section1) {}; % 9.75,13.5
+  \node[not gate] (inv_ne_6) at ([shift={(10.75,1.5)}] section1) {};
+  \node[not gate] (inv_ne_7) at ([shift={(11.85,1.5)}] section1) {};
+  \node[anchor=center, align=center, text width=12cm] at ([shift={(7,1)}] section1) {\tiny DelayGate Various Odd Count based on N=1\textbar3\textbar5\textbar7};
+  \node[anchor=center, align=center, text width=2cm] at ([shift={(15.3,1.3)}] section1) {\tiny negedge detector};
+
+  \node[not gate] (inv_ne_end) at ([shift={(13.5,1.5)}] section1) {}; % 12.0,13.5
+
+  \node[and gate] (ne_and2) at ([shift={(15.5,2.4)}] section1) {}; % 14.25,14.4
+
+  \draw[thick] (inv_ne_clk.output) -- (inv_ne_1.input);
+  \draw[thick,dashed] (inv_ne_1.output) -- (inv_ne_2.input);
+  \draw[thick] (inv_ne_2.output) -- (inv_ne_3.input);
+  \draw[thick,dashed] (inv_ne_3.output) -- (inv_ne_4.input);
+  \draw[thick] (inv_ne_4.output) -- (inv_ne_5.input);
+  \draw[thick,dashed] (inv_ne_5.output) -- (inv_ne_6.input);
+  \draw[thick] (inv_ne_6.output) -- (inv_ne_7.input);
+  \draw[thick,dashed] (inv_ne_7.output) -- (inv_ne_end.input);
+  \draw[dashed] ([shift={(1.8,2.15)}] section1) rectangle ([shift={(12.75,0.75)}] section1) {}; % 2.5,14.15 % 10.5,12.75
+  \node[circ] (circ_ne_clk) at ([shift={(0.33,2.5)}] section1) {}; % 0.75,14.5
+  \draw[thick] (circ_ne_clk) -- (ne_and2.input 1);
+  \draw[thick] (circ_ne_clk) -| ++(0,0) |- (inv_ne_clk.input);
+  \draw[thick] (inv_ne_end.output) -| ++(0.33,0) |- (ne_and2.input 2);
+  \draw[thick] (ne_and2.output) -| ++(0.33,0) |- (or2.input 2);
+
+  \node[circ] (circ_clk_0) at ([shift={(0,4)}] section1) {}; % 0,16.0
+  \draw[thick] (circ_clk_0) -| ++(0.33,0) |- (circ_pe_clk);
+  \draw[thick] (circ_clk_0) -| ++(0.33,0) |- (circ_ne_clk);
+  \node[anchor=east, align=right, text width=2cm] (text_clk_0) at ([xshift=-0.1em] circ_clk_0) {\fontb{clk}};
+
+  \node[draw, align=center, text width=8cm] at ([shift={(6.5,3.15)}] section1) % 6.5,15.15
+    {\textbf{module: ddr\_input, parameter int N=1}};
+
+  %% section2 (bottom part)
+
+  \node[flipflop DQC] (Rd0) at ([shift={(6.5,10.35)}] section2) {}; % 6.5,10.35
+  \node[flipflop DQClc] (Rddr_input1) at ([shift={(9.5,8)}] section2) {}; % 9.5,8
+  \node[flipflop DQClc] (Rddr_input3) at ([shift={(6.5,5.65)}] section2) {}; % 6.5,5.65
+  \node[flipflop DQClc] (Rddr_input5) at ([shift={(9.5,3.3)}] section2) {}; % 9.5,3.3
+  \node[flipflop DQClc] (Rddr_input7) at ([shift={(6.5,1.10)}] section2) {}; % 6.5,1.10
+
+  \node[above=2pt of Rd0.north] {\small d0};
+  \node at (Rd0) {\tiny DFF};
+  \node[above=2pt of Rddr_input1.north] {\small ddr\_input1};
+  \node at (Rddr_input1) {\tiny N=1};
+  \node[above=2pt of Rddr_input3.north] {\small ddr\_input3};
+  \node at (Rddr_input3) {\tiny N=3};
+  \node[above=2pt of Rddr_input5.north] {\small ddr\_input5};
+  \node at (Rddr_input5) {\tiny N=5};
+  \node[above=2pt of Rddr_input7.north] {\small ddr\_input7};
+  \node at (Rddr_input7) {\tiny N=7};
+
+  % ui_in0
+  \draw let
+    \p1 = (portin),
+    \p2 = (Rddr_input1.pin 1),
+    \p3 = (\x1,\y2)
+    in {
+        node[anchor=east, align=right, text width=2cm] (text_ui_in2) at ([xshift=-0.1em] \p3) {\fontb{ui\_in[0]}}
+        node[circ] (circ_ui_in2) at (\p3) {}
+    };
+  \draw let
+    \p1 = (portin),
+    \p2 = (circ_ui_in2),
+    \p3 = (\x1,\y2)
+    in [thick] (\p3) -- (Rddr_input1.pin 1);
+
+  % ui_in1
+  \draw let
+    \p1 = (portin),
+    \p2 = (Rddr_input3.pin 1),
+    \p3 = (\x1,\y2)
+    in {
+        node[anchor=east, align=right, text width=2cm] (text_ui_in1) at ([xshift=-0.1em] \p3) {\fontb{ui\_in[1]}}
+        node[circ] (circ_ui_in1) at (\p3) {}
+    };
+  \draw let
+    \p1 = (portin),
+    \p2 = (circ_ui_in1),
+    \p3 = (\x1,\y2)
+    in [thick] (\p3) -- (Rddr_input3.pin 1);
+
+  % ui_in2
+  \draw let
+    \p1 = (portin),
+    \p2 = (Rddr_input5.pin 1),
+    \p3 = (\x1,\y2)
+    in {
+        node[anchor=east, align=right, text width=2cm] (text_ui_in2) at ([xshift=-0.1em] \p3) {\fontb{ui\_in[2]}}
+        node[circ] (circ_ui_in2) at (\p3) {}
+    };
+  \draw let
+    \p1 = (portin),
+    \p2 = (circ_ui_in2),
+    \p3 = (\x1,\y2)
+    in [thick] (\p3) -- (Rddr_input5.pin 1);
+
+  % ui_in3
+  \draw let
+    \p1 = (portin),
+    \p2 = (Rddr_input7.pin 1),
+    \p3 = (\x1,\y2)
+    in {
+        node[anchor=east, align=right, text width=2cm] (text_ui_in3) at ([xshift=-0.1em] \p3) {\fontb{ui\_in[3]}}
+        node[circ] (circ_ui_in3) at (\p3) {}
+    };
+  \draw let
+    \p1 = (portin),
+    \p2 = (circ_ui_in3),
+    \p3 = (\x1,\y2)
+    in [thick] (\p3) -- (Rddr_input7.pin 1);
+
+  % ui_in4
+  \draw let
+    \p1 = (portin),
+    \p2 = (Rd0.pin 1),
+    \p3 = (\x1,\y2)
+    in {
+        node[anchor=east, align=right, text width=2cm] (text_ui_in4) at ([xshift=-0.1em] \p3) {\fontb{ui\_in[4]}}
+        node[circ] (circ_ui_in4) at (\p3) {}
+    };
+  \draw let
+    \p1 = (portin),
+    \p2 = (circ_ui_in4),
+    \p3 = (\x1,\y2)
+    in [thick] (\p3) -- (Rd0.pin 1);
+
+
+  % uo_out4
+  \draw let
+    \p1 = (portout),
+    \p2 = (Rd0.pin 6),
+    \p3 = (\x1,\y2)
+    in {
+      node[anchor=west, text width=2cm] (text_uo_out4) at ([xshift=0.2em] \p3) {\fontb{uo\_out[4]}}
+      node[circ] (circ_uo_out4) at (\p3) {}
+    };
+  \draw let
+    \p1 = (portout),
+    \p2 = (Rd0.pin 6),
+    \p3 = (\x1,\y2)
+    in [thick] (Rd0.pin 6) -- (\p3);
+
+  % uo_out7
+  \draw let
+    \p1 = (portout),
+    \p2 = ([yshift=3em] portout),
+    \p3 = (\x1,\y2)
+    in {
+      node[anchor=west, text width=2cm] (text_uo_out7) at ([xshift=0.2em] \p3) {\fontb{uo\_out[7]}}
+      node[circ] (circ_uo_out7) at (\p3) {}
+    };
+
+  % uo_out6:5
+  \draw let
+    \p1 = ([xshift=-1.5em] portout),
+    \p2 = ([yshift=2em] circ_uo_out4),
+    \p3 = (\x1,\y2)
+    in node[thick, rground, rotate=180] (vcc) at (\p3) {};
+  \draw let
+    \p1 = (portout),
+    \p2 = ([yshift=1.0em] circ_uo_out4),
+    \p3 = (\x1,\y2)
+    in [thick] (vcc) |- (\p3);
+  \draw let
+    \p1 = (portout),
+    \p2 = ([yshift=1.0em] circ_uo_out4),
+    \p3 = (\x1,\y2)
+    in {
+      node[anchor=west, text width=2cm] (text_uo_out6) at ([xshift=0.2em] \p3) {\fontb{uo\_out[6:5]}}
+      node[circ] (circ_uo_out6) at (\p3) {}
+    };
+
+  % uo_out3
+  \draw let 
+    \p1 = (portout),
+    \p2 = (Rddr_input7.pin 6),
+    \p3 = (\x1,\y2)
+    in {
+      node[anchor=west, text width=2cm] (text_uo_out3) at ([xshift=0.2em] \p3) {\fontb{uo\_out[3]}}
+      node[circ] (circ_uo_out3) at (\p3) {}
+    };
+  \draw let
+    \p1 = (portout),
+    \p2 = (circ_uo_out3),
+    \p3 = (\x1,\y2)
+    in [thick] (Rddr_input7.pin 6) -- (\p3);
+
+  % uo_out2
+  \draw let 
+    \p1 = (portout),
+    \p2 = (Rddr_input5.pin 6),
+    \p3 = (\x1,\y2)
+    in {
+      node[anchor=west, text width=2cm] (text_uo_out2) at ([xshift=0.2em] \p3) {\fontb{uo\_out[2]}}
+      node[circ] (circ_uo_out2) at (\p3) {}
+    };
+  \draw let
+    \p1 = (portout),
+    \p2 = (circ_uo_out2),
+    \p3 = (\x1,\y2)
+    in [thick] (Rddr_input5.pin 6) -- (\p3);
+
+  % uo_out1
+  \draw let 
+    \p1 = (portout),
+    \p2 = (Rddr_input3.pin 6),
+    \p3 = (\x1,\y2)
+    in {
+      node[anchor=west, text width=2cm] (text_uo_out1) at ([xshift=0.2em] \p3) {\fontb{uo\_out[1]}}
+      node[circ] (circ_uo_out1) at (\p3) {}
+    };
+  \draw let
+    \p1 = (portout),
+    \p2 = (circ_uo_out1),
+    \p3 = (\x1,\y2)
+    in [thick] (Rddr_input3.pin 6) -- (\p3);
+
+  % uo_out0
+  \draw let
+    \p1 = (portout),
+    \p2 = (Rddr_input1.pin 6),
+    \p3 = (\x1,\y2)
+    in {
+      node[anchor=west, text width=2cm] (text_uo_out0) at ([xshift=0.2em] \p3) {\fontb{uo\_out[0]}}
+      node[circ] (circ_uo_out0) at (\p3) {}
+    };
+  \draw let
+    \p1 = (portout),
+    \p2 = (circ_uo_out0),
+    \p3 = (\x1,\y2)
+    in [thick] (Rddr_input1.pin 6) -- (\p3);
+
+  % clk
+  \draw let
+    \p1 = (portin),
+    \p2 = ([yshift=3em] portin),
+    \p3 = (\x1,\y2)
+    in {
+        node[anchor=east, align=right, text width=2cm] (text_clk) at ([xshift=-0.1em] \p3) {\fontb{clk}}
+        node[circ] (circ_clk) at (\p3) {}
+    };
+  \draw[thick, blue] (circ_clk) -| ++(4,1.5) |- (Rddr_input7.pin 3);
+  \draw[thick, blue] (circ_clk) -| ++(4,2.45) |- (Rddr_input5.pin 3);
+  \draw[thick, blue] (circ_clk) -| ++(4,4.6) |- (Rddr_input3.pin 3);
+  \draw[thick, blue] (circ_clk) -| ++(4,6.95) |- (Rddr_input1.pin 3);
+  \draw[thick, blue] (circ_clk) -| ++(4,9.35) |- (Rd0.pin 3);
+  \draw[thick, blue] (circ_clk) -| ++(15,0) |- (circ_uo_out7);
+
+  % rst_n
+  \draw let
+    \p1 = (portin),
+    \p2 = ([yshift=1.5em] circ_clk),
+    \p3 = (\x1,\y2)
+    in {
+        node[anchor=east, align=right, text width=2cm] (text_rst_n) at ([xshift=-0.1em] \p3) {\fontb{rst\_n}}
+        node[circ] (circ_rst_n) at (\p3) {}
+    };
+  \draw[thick,brown] (circ_rst_n) -- ++(5,0) -| (Rddr_input7-Nd.south); % -Nd offsets bubble
+  \draw[thick,brown] (circ_rst_n) -- ++(11,0) -| ++(0,2.25) -| (Rddr_input5-Nd.south); % -Nd offsets bubble
+  \draw[thick,brown] (circ_rst_n) -- ++(5,0) -| ++(0,4.4) -| (Rddr_input3-Nd.south); % -Nd offsets bubble
+  \draw[thick,brown] (circ_rst_n) -- ++(11,0) -| ++(0,6.75) -| (Rddr_input1-Nd.south); % -Nd offsets bubble
+  \draw[thick,brown] (circ_rst_n) -- ++(5,0) -| ++(0,9.15) -| (Rd0-Nd.south); % -Nd offsets bubble
+
+  \node[draw, align=center, text width=20cm] at ([xshift=-3em, yshift=5.5em] $(current page.south)$)
+    {\textbf{Double Data Rate Throughput Test}};
+
+  %\draw (-1,0.25) -- (5,0.25);
+
+  \draw (0,0) -- (0,0.5);
+  \draw (0,0) -- (0,-1);
+  \draw (0,0) -- (0.5,0);
+  \draw (0,0) -- (-1,0);
+%\end{circuitikz}
+
+\begin{comment}
+% all commands/directives here are treated as comments
+\end{comment}
+
+\end{tikzpicture}
+
+\clearpage
+\end{document}
